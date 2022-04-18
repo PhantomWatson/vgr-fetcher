@@ -38,17 +38,16 @@
                 &copy; <?= date('Y') ?> <a href="https://phantomwatson.com">Phantom Watson</a>
             </li>
             <li>
-                <a href="https://github.com/stephan-strate/php-music-brainz-api">
-                    stephan-strate/php-music-brainz-api
+                <a href="https://musicbrainz.org/">
+                    MusicBrainz.org
                 </a>
             </li>
             <li>
-                <a href="https://github.com/stephan-strate/php-cover-art-archive-api">
-                    stephan-strate/php-cover-art-archive-api
+                <a href="https://coverartarchive.org">
+                    CoverArtArchive.org
                 </a>
             </li>
         </ul>
-
     </footer>
 </body>
 </html>
