@@ -11,5 +11,8 @@ label[for=input] select {
 #output[data-has-output="0"] .table {
   display: none;
 }
+#output table img {
+  max-width: 100px;
+}
 
 /*# sourceMappingURL=styles.css.map */
