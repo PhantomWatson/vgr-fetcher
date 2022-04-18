@@ -54,14 +54,11 @@ class VgrFetcher {
             return;
         }
 
-        this.setProgress(this.index + 1);
         const artist = splitLine[0];
         const album = splitLine[1];
         this.addRow(artist, album);
 
-        console.log(line);
         const mbid = await this.fetchMbid(line);
-        console.log(mbid);
         if (mbid) {
             const albumArtUrl = await this.fetchAlbumArt(mbid);
             if (albumArtUrl) {
@@ -72,6 +69,7 @@ class VgrFetcher {
         } else {
             this.updateResult('Album not found');
         }
+        this.setProgress(this.index + 1);
 
         if (!this.isDone()) {
             this.index++;
@@ -84,7 +82,7 @@ class VgrFetcher {
     }
 
     setProgress(current) {
-        let percentDone = Math.round((current / this.lineCount) * 100);
+        let percentDone = (current >= this.lineCount) ? 100 : Math.round((current / this.lineCount) * 100);
         percentDone = `${percentDone}%`;
         this.progress.style.width = percentDone;
         this.progress.innerHTML = percentDone;
@@ -105,7 +103,6 @@ class VgrFetcher {
 
     async fetchMbid(line) {
         if (this.mbidCache.hasOwnProperty(line)) {
-            console.log('album found in cache');
             return this.mbidCache[line];
         }
 
@@ -156,7 +153,6 @@ class VgrFetcher {
 
     async fetchAlbumArt(mbid) {
         if (this.imageCache.hasOwnProperty(mbid)) {
-            console.log('image found in cache');
             return this.imageCache[mbid];
         }
 
@@ -177,7 +173,7 @@ class VgrFetcher {
             })();
             return imageUrl;
         } catch (error) {
-            console.log(error);
+            console.error(error);
             return false;
         }
     }
