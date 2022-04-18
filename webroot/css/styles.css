@@ -15,4 +15,8 @@ label[for=input] select {
   max-width: 100px;
 }
 
+footer {
+  text-align: center;
+}
+
 /*# sourceMappingURL=styles.css.map */
