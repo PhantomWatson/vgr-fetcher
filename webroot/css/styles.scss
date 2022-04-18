@@ -1,0 +1,18 @@
+label[for="input"] {
+    select {
+        display: inline;
+    }
+}
+#output {
+    &[data-has-output="0"] {
+        h1 {
+            display: none;
+        }
+        .progress {
+            display: none;
+        }
+        .table {
+            display: none;
+        }
+    }
+}

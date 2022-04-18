@@ -1,0 +1,15 @@
+label[for=input] select {
+  display: inline;
+}
+
+#output[data-has-output="0"] h1 {
+  display: none;
+}
+#output[data-has-output="0"] .progress {
+  display: none;
+}
+#output[data-has-output="0"] .table {
+  display: none;
+}
+
+/*# sourceMappingURL=styles.css.map */
