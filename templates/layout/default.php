@@ -1,6 +1,7 @@
 <?php
 /**
  * @var \App\View\AppView $this
+ * @var string $title
  */
 ?>
 <!doctype html>
@@ -9,12 +10,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>
-        <?= $this->fetch('title') ?>
+        <?= $title ?>
     </title>
     <?= $this->Html->meta('icon') ?>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <link href="/css/styles.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet">
+    <link href="/fontawesome/css/all.css" rel="stylesheet">
     <?php /* echo $this->Html->css(['normalize.min', 'milligram.min', 'cake']);*/ ?>
     <script src="/js/vgr-fetcher.js"></script>
     <?= $this->fetch('meta') ?>
