@@ -1,23 +1,46 @@
 <div class="container">
     <form id="form">
         <div class="mb-3">
-            <label for="input" class="form-label">
-                Artist Name
-                <select id="delimiter">
-                    <option value=",">
-                        ,
-                    </option>
-                    <option value=" - ">
-                        -
-                    </option>
-                    <option value="	">
-                        (tab)
-                    </option>
-                </select>
-                Album Name
+            <label for="input-mode">
+                Input mode
             </label>
+            <select id="input-mode">
+                <option value="artist-album">
+                    Artist / Album title
+                </option>
+                <option value="upc">
+                    UPC
+                </option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <div id="inputs-artist-album">
+                <label for="input" class="form-label">
+                    Artist Name
+                    <select id="delimiter">
+                        <option value=",">
+                            ,
+                        </option>
+                        <option value=" - ">
+                            -
+                        </option>
+                        <option value="	">
+                            (tab)
+                        </option>
+                    </select>
+                    Album Name
+                </label>
+            </div>
+            <div id="inputs-upc">
+                <label for="input" class="form-label">
+                    UPC
+                </label>
+            </div>
             <textarea class="form-control" id="input" rows="3">The Beatles, St. Pepper's Lonely Hearts Club Band
 No Doubt, Tragic Kingdom</textarea>
+            <p class="footnote">
+                One album per line
+            </p>
         </div>
         <div class="mb-3">
             <button type="submit" class="btn btn-primary" id="submit">
@@ -35,6 +58,7 @@ No Doubt, Tragic Kingdom</textarea>
         <table class="table">
             <thead>
                 <tr>
+                    <th>UPC</th>
                     <th>Artist</th>
                     <th>Album</th>
                     <th>Result</th>

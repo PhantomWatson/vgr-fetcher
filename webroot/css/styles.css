@@ -19,4 +19,12 @@ footer {
   text-align: center;
 }
 
+.footnote {
+  font-size: 80%;
+}
+
+label {
+  font-weight: bold;
+}
+
 /*# sourceMappingURL=styles.css.map */
