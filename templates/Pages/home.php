@@ -10,10 +10,14 @@
                     <option value=" - ">
                         -
                     </option>
+                    <option value="	">
+                        (tab)
+                    </option>
                 </select>
                 Album Name
             </label>
-            <textarea class="form-control" id="input" rows="3"></textarea>
+            <textarea class="form-control" id="input" rows="3">The Beatles, St. Pepper's Lonely Hearts Club Band
+No Doubt, Tragic Kingdom</textarea>
         </div>
         <div class="mb-3">
             <button type="submit" class="btn btn-primary" id="submit">
