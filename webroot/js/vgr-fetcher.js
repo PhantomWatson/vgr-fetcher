@@ -70,10 +70,10 @@ class VgrFetcher {
             if (albumArtUrl) {
                 this.updateResult(`<a href="${albumArtUrl}" target="_blank"><img src="${albumArtUrl}" /></a>`)
             } else {
-                this.updateResult('Album art not found');
+                this.updateResult(this.notFound('Album art not found'));
             }
         } else {
-            this.updateResult('Album not found');
+            this.updateResult(this.notFound('Album not found'));
         }
         this.setProgress(this.index + 1);
 
@@ -141,7 +141,7 @@ class VgrFetcher {
                 const response = await fetch(url, init);
                 const data = await response.json();
                 console.log(data);
-                mbid = data.releases[0].id ?? null;
+                mbid = data.releases[0]?.id ?? null;
                 this.mbidCache[line] = mbid;
                 if (this.inputMode.value === 'upc') {
                     this.updateArtistAndAlbum(data);
@@ -155,16 +155,20 @@ class VgrFetcher {
     }
 
     updateArtistAndAlbum(data) {
-        const artistResults = data.releases[0]['artist-credit'] ?? [];
+        const release = data.releases[0] ?? null;
+        const artistResults = (release && release.hasOwnProperty('artist-credit')) ? release['artist-credit'] : [];
         const artistsArray = [];
         artistResults.forEach((artistObj) => {
             artistsArray.push(artistObj.name);
         })
-        const notFound = '<span class="alert alert-warning">Not found</span>';
-        const artist = artistsArray.length ? artistsArray.join(', ') : notFound;
-        const album = data.releases[0].title ?? notFound;
+        const artist = artistsArray.length ? artistsArray.join(', ') : this.notFound();
+        const album = (release && release.hasOwnProperty('title')) ? release.title : this.notFound();
         document.getElementById('artist-' + this.index).innerHTML = artist;
         document.getElementById('album-' + this.index).innerHTML = album;
+    }
+
+    notFound(text = 'Not found') {
+        return `<span class="alert alert-warning">${text}</span>`;
     }
 
     parseAlbumArtResponseCode(code) {

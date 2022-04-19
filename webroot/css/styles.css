@@ -27,4 +27,8 @@ label {
   font-weight: bold;
 }
 
+.alert-warning {
+  padding: 5px;
+}
+
 /*# sourceMappingURL=styles.css.map */
