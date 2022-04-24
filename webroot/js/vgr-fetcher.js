@@ -33,8 +33,6 @@ class VgrFetcher {
             this.handleModeChange();
         });
         this.handleModeChange();
-
-        // TODO: Change process button to stop button, revert when done processing
     }
 
     process() {
@@ -44,6 +42,8 @@ class VgrFetcher {
             return;
         }
 
+        this.button.disabled = true;
+        this.button.innerHTML = 'Processing...';
         this.output.dataset.hasOutput = "1";
         this.delimiter = this.delimiterSelect.value;
         this.lines = input.split("\n");
@@ -77,10 +77,14 @@ class VgrFetcher {
         }
         this.setProgress(this.index + 1);
 
-        if (!this.isDone()) {
-            this.index++;
-            this.processLine();
+        if (this.isDone()) {
+            this.button.disabled = false;
+            this.button.innerHTML = 'Process';
+            return;
         }
+
+        this.index++;
+        this.processLine();
     }
 
     isDone() {
