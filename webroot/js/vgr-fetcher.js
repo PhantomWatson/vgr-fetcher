@@ -182,7 +182,6 @@ class VgrFetcher {
             }
         }
 
-        document.getElementById('input').innerHTML += "\nreturning " + groupedImages.length;
         return groupedImages;
     }
 
