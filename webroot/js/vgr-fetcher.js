@@ -71,6 +71,7 @@ class VgrFetcher {
         const albumProperties = this.getAlbumPropertiesFromLine(line);
         this.addRow(albumProperties.upc, albumProperties.artist, albumProperties.album);
         const releases = await this.fetchReleases(line);
+        this.updateReleaseCount(releases, index);
         await this.fetchAndAddImages(releases, index);
         this.setProgress(index + 1);
 
@@ -81,6 +82,15 @@ class VgrFetcher {
 
         this.index++;
         await this.processLine(this.index);
+    }
+
+    /**
+     * @param {Array} releases
+     * @param {number} index
+     */
+    updateReleaseCount(releases, index) {
+        const countCell = document.getElementById('release-count-' + index);
+        countCell.innerHTML = String(releases.length);
     }
 
     /**
@@ -182,7 +192,7 @@ class VgrFetcher {
             : await this.fetchReleasesFromApi(line);
 
         if (this.inputMode.value === 'upc') {
-            this.updateArtistAlbumReleaseCount(releases);
+            this.updateArtistAndAlbum(releases);
         }
 
         if (releases.length > 0) {
@@ -240,14 +250,12 @@ class VgrFetcher {
     /**
      * @param {Array} releases
      */
-    updateArtistAlbumReleaseCount(releases) {
+    updateArtistAndAlbum(releases) {
         const artistCell = document.getElementById('artist-' + this.index);
         const albumCell = document.getElementById('album-' + this.index);
-        const countCell = document.getElementById('release-count-' + this.index);
         if (releases.length === 0) {
             artistCell.innerHTML = this.notFound();
             albumCell.innerHTML = this.notFound();
-            countCell.innerHTML = '0';
             return;
         }
 
@@ -259,7 +267,6 @@ class VgrFetcher {
         });
         artistCell.innerHTML = artists.join('<br />');
         albumCell.innerHTML = albums.join('<br />');
-        countCell.innerHTML = String(releases.length);
     }
 
     /**
@@ -322,7 +329,7 @@ class VgrFetcher {
                     const response = await fetch(url);
                     if (!response.ok) {
                         const errorMsg = this.parseAlbumArtResponseCode(response.status);
-                        this.addToImageCell(errorMsg, index);
+                        console.log(`Error response returned when fetching art for release ${release.mbid}: ${errorMsg}`);
                         return;
                     }
                     data = await response.json();
