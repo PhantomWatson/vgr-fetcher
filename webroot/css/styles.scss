@@ -4,6 +4,10 @@ label[for="input"] {
     }
 }
 
+#input {
+    min-height: 300px;
+}
+
 #output {
     &[data-has-output="0"] {
         h1 {

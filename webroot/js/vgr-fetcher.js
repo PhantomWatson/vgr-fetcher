@@ -37,6 +37,8 @@ class VgrFetcher {
         // TODO: Clear table if this isn't the first time input has been processed
         // TODO: Change process button to a stop button
         // TODO: Skip blank lines
+        // TODO: Check status code for each image URL and ignore non-2XX images
+        // TODO: Hide UPC column when not in UPC mode
     }
 
     async process() {
@@ -71,8 +73,10 @@ class VgrFetcher {
         const albumProperties = this.getAlbumPropertiesFromLine(line);
         this.addRow(albumProperties.upc, albumProperties.artist, albumProperties.album);
         const releases = await this.fetchReleases(line);
-        this.updateReleaseCount(releases, index);
-        await this.fetchAndAddImages(releases, index);
+        //const groupedImages = await this.getGroupedImages(releases);
+        //this.updateWithGroupedImages(groupedImages, index);
+        this.getGroupedImages(releases)
+            .then((groupedImages) => this.updateWithGroupedImages(groupedImages, index));
         this.setProgress(index + 1);
 
         if (this.isDone()) {
@@ -85,12 +89,96 @@ class VgrFetcher {
     }
 
     /**
-     * @param {Array} releases
+     * @param {Object} groupedImages
      * @param {number} index
      */
-    updateReleaseCount(releases, index) {
-        const countCell = document.getElementById('release-count-' + index);
-        countCell.innerHTML = String(releases.length);
+    updateWithGroupedImages(groupedImages, index) {
+        const select = document.createElement('select');
+        const artContainer = this.getArtContainer(index);
+        let div, img, option;
+        groupedImages.forEach((group) => {
+            const medium = group.medium;
+            const images = group.images;
+
+            // Add options to selector
+            option = document.createElement('option');
+            option.value = medium;
+            option.innerHTML = `${medium} (${images.length})`;
+            select.appendChild(option);
+
+            // Add images
+            div = document.createElement('div');
+            div.dataset.medium = medium;
+            images.forEach((image) => {
+                img = document.createElement('a');
+                img.href = image;
+                img.target = '_blank';
+                img.innerHTML = `<img src="${image}" />`;
+                div.appendChild(img)
+            });
+            artContainer.appendChild(div);
+        });
+
+        // Add selector
+        select.addEventListener('change', (event) => {
+            const medium = event.target.value;
+            this.selectMedium(medium, index);
+        });
+        const selectorContainer = document.getElementById('media-' + index);
+        selectorContainer.innerHTML = '';
+        selectorContainer.appendChild(select);
+
+        // Select first group
+        const firstMedium = select.querySelector('option:checked');
+        if (firstMedium) {
+            this.selectMedium(firstMedium.value, index);
+        }
+    }
+
+    selectMedium(medium, index) {
+        const container = this.getArtContainer(index);
+        const mediumSafe = medium.replace(/["\\]/g, '\\$&');
+        const toShow = container.querySelector(`div[data-medium="${mediumSafe}"]`);
+        toShow.style.display = 'block';
+        const toHide = container.querySelectorAll(`div:not([data-medium="${mediumSafe}"])`);
+        toHide.forEach((element) => {
+            element.style.display = 'none';
+        });
+    }
+
+    async getGroupedImages(releases) {
+        const groupedImages = [];
+        for (const release of releases) {
+            await this.sleep(this.albumArtThrottle);
+            let data;
+            try {
+                let url = `http://coverartarchive.org/release/${release.mbid}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorMsg = this.parseAlbumArtResponseCode(response.status);
+                    console.log(`Error response returned when fetching art for release ${release.mbid}: ${errorMsg}`);
+                    continue;
+                }
+                data = await response.json();
+            } catch (error) {
+                console.error(error);
+            }
+            //console.log('Fetched image data: ', data);
+            data.images.forEach((image) => {
+                let index = groupedImages.findIndex(group => group.medium === release.medium);
+                const group = (index === -1) ? {medium: release.medium, images: []} : groupedImages[index];
+                // TODO: Check for 200 response for image URL
+                group.images.push(image.image);
+                if (index === -1) {
+                    groupedImages.push(group);
+                } else {
+                    groupedImages[index] = group;
+                }
+            });
+        }
+
+        document.getElementById('input').innerHTML += "\nreturning " + groupedImages.length;
+        return groupedImages;
     }
 
     /**
@@ -104,8 +192,8 @@ class VgrFetcher {
     /**
      * @returns {HTMLElement}
      */
-    getArtContainer() {
-        return document.getElementById('result-' + this.index);
+    getArtContainer(index) {
+        return document.getElementById('result-' + index);
     }
 
     /**
@@ -147,7 +235,7 @@ class VgrFetcher {
                 row += `<td></td><td></td><td></td>`;
                 this.alertUnknownInputMode();
         }
-        row += `<td id="release-count-${this.index}"><i class="fa-solid fa-cog fa-spin"></i></td>`;
+        row += `<td id="media-${this.index}"><i class="fa-solid fa-cog fa-spin"></i></td>`;
         row += `<td id="result-${this.index}">${this.fetching()}</td></tr>`;
 
         this.outputTable.innerHTML += row;
@@ -217,7 +305,7 @@ class VgrFetcher {
                 };
                 const response = await fetch(url, init);
                 const data = await response.json();
-                console.log(data);
+                //console.log('Fetched release data: ', data);
                 data.releases.forEach((release) => {
                     releases.push(this.parseReleaseData(release));
                 });
@@ -240,10 +328,17 @@ class VgrFetcher {
         })
         const artist = artistsArray.length ? artistsArray.join(', ') : this.notFound();
         const album = (release && release.hasOwnProperty('title')) ? release.title : this.notFound();
+        const media = release?.media;
+        let medium = media ? media[0]?.format : null;
+        if (!medium) {
+            medium = 'Unknown Format';
+            //console.log('Unknown format for this release: ', release);
+        }
         return {
             mbid: release.id ?? null,
             artist: artist,
             album: album,
+            medium: medium,
         };
     }
 
@@ -298,58 +393,6 @@ class VgrFetcher {
         }
 
         return 'Unknown response code: ' + code;
-    }
-
-    /**
-     * @param {Array} releases
-     * @param {number} index
-     * @returns {Promise<void>}
-     */
-    async fetchAndAddImages(releases, index) {
-        if (releases.length === 0) {
-            this.addToImageCell('', index);
-            return;
-        }
-
-        let artFound = false;
-        releases.forEach((release) => {
-            // Populate art cell from cache
-            if (this.imageCache.hasOwnProperty(release.mbid)) {
-                const images = this.imageCache[release.mbid];
-                this.addImages(images, index);
-                return;
-            }
-
-            // Fetch art and populate art cell
-            (async () => {
-                await this.sleep(this.albumArtThrottle);
-                let data;
-                try {
-                    let url = `http://coverartarchive.org/release/${release.mbid}`;
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        const errorMsg = this.parseAlbumArtResponseCode(response.status);
-                        console.log(`Error response returned when fetching art for release ${release.mbid}: ${errorMsg}`);
-                        return;
-                    }
-                    data = await response.json();
-                } catch (error) {
-                    console.error(error);
-                }
-                console.log(data);
-                const images = data.images.map(image => image.image);
-                this.addImages(images, index);
-                this.imageCache[release.mbid] = images;
-                if (images.length) {
-                    artFound = true;
-                }
-            })();
-        });
-
-        if (!artFound) {
-            //TODO: Fix weird async problem where this code is executed before above loop finishes
-            //this.addToImageCell(this.notFound('Album art not found'), index);
-        }
     }
 
     /**

@@ -2,6 +2,10 @@ label[for=input] select {
   display: inline;
 }
 
+#input {
+  min-height: 300px;
+}
+
 #output[data-has-output="0"] h1 {
   display: none;
 }
