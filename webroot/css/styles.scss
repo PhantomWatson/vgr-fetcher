@@ -28,6 +28,13 @@ label[for="input"] {
             max-width: 100px;
         }
     }
+
+    tbody {
+        td:nth-child(1),
+        td:nth-child(2) {
+            white-space: nowrap;
+        }
+    }
 }
 
 footer {

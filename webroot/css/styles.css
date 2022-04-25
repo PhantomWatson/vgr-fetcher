@@ -20,6 +20,10 @@ label[for=input] select {
   margin-right: 5px;
   max-width: 100px;
 }
+#output tbody td:nth-child(1),
+#output tbody td:nth-child(2) {
+  white-space: nowrap;
+}
 
 footer {
   text-align: center;
