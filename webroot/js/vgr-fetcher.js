@@ -1,24 +1,24 @@
 class VgrFetcher {
-
     constructor() {
         this.mbHeaders = new Headers({
             'User-Agent': 'VgrFetcher/1.0.0 ( graham@phantomwatson.com )'
         });
         this.mbidThrottle = 1000;
         this.albumArtThrottle = 500;
+        this.resultLimit = 10;
         this.form = document.getElementById('form');
-        this.form.addEventListener('submit', (event) => {
+        this.form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            this.process();
+            await this.process();
         });
 
         this.delimiterSelect = document.getElementById('delimiter');
         this.inputField = document.getElementById('input');
 
         this.button = document.getElementById('submit');
-        this.button.addEventListener('click', (event) => {
+        this.button.addEventListener('click', async (event) => {
             event.preventDefault();
-            this.process();
+            await this.process();
         });
 
         this.output = document.getElementById('output');
@@ -26,16 +26,20 @@ class VgrFetcher {
         this.progress = document.getElementById('progress');
 
         this.imageCache = {};
-        this.mbidCache = {};
+        this.releaseCache = {};
 
         this.inputMode = document.getElementById('input-mode');
         this.inputMode.addEventListener('change', () => {
             this.handleModeChange();
         });
         this.handleModeChange();
+
+        // TODO: Clear table if this isn't the first time input has been processed
+        // TODO: Change process button to a stop button
+        // TODO: Skip blank lines
     }
 
-    process() {
+    async process() {
         const input = this.inputField.value;
         if (!input) {
             alert('You gotta put some input in first');
@@ -50,12 +54,15 @@ class VgrFetcher {
         this.lineCount = this.lines.length;
         this.outputTable.innerHTML = '';
         this.index = 0;
-        this.processLine();
+        await this.processLine(this.index);
     }
 
-    async processLine() {
-        const line = this.lines[this.index].trim();
-        // TODO: Skip blank lines
+    /**
+     * @returns {Promise<void>}
+     */
+    async processLine(index) {
+        const line = this.lines[index].trim();
+
         if (!this.isValidLine(line)) {
             this.addInvalidRow(line);
             return;
@@ -63,34 +70,44 @@ class VgrFetcher {
 
         const albumProperties = this.getAlbumPropertiesFromLine(line);
         this.addRow(albumProperties.upc, albumProperties.artist, albumProperties.album);
-
-        const mbid = await this.fetchMbid(line);
-        if (mbid) {
-            const albumArtUrl = await this.fetchAlbumArt(mbid);
-            if (albumArtUrl) {
-                this.updateResult(`<a href="${albumArtUrl}" target="_blank"><img src="${albumArtUrl}" /></a>`)
-            } else {
-                this.updateResult(this.notFound('Album art not found'));
-            }
-        } else {
-            this.updateResult(this.notFound('Album not found'));
-        }
-        this.setProgress(this.index + 1);
+        const releases = await this.fetchReleases(line);
+        await this.fetchAndAddImages(releases, index);
+        this.setProgress(index + 1);
 
         if (this.isDone()) {
-            this.button.disabled = false;
-            this.button.innerHTML = 'Process';
+            this.finalize();
             return;
         }
 
         this.index++;
-        this.processLine();
+        await this.processLine(this.index);
     }
 
+    /**
+     * Wraps up execution
+     */
+    finalize() {
+        this.button.disabled = false;
+        this.button.innerHTML = 'Process';
+    }
+
+    /**
+     * @returns {HTMLElement}
+     */
+    getArtContainer() {
+        return document.getElementById('result-' + this.index);
+    }
+
+    /**
+     * @returns {boolean}
+     */
     isDone() {
         return this.index + 1 === this.lineCount;
     }
 
+    /**
+     * @param {number} current
+     */
     setProgress(current) {
         let percentDone = (current >= this.lineCount) ? 100 : Math.round((current / this.lineCount) * 100);
         percentDone = `${percentDone}%`;
@@ -98,44 +115,75 @@ class VgrFetcher {
         this.progress.innerHTML = percentDone;
     }
 
+    /**
+     * @param {string} upc
+     * @param {string} artist
+     * @param {string} album
+     */
     addRow(upc, artist, album) {
         let row = '<tr>';
         switch (this.inputMode.value) {
             case 'artist-album':
-                row += `<td></td><td>${artist}</td><td>${album}</td>`;
+                row += '<td></td>';
+                row += `<td>${artist}</td>`;
+                row += `<td>${album}</td>`;
                 break;
             case 'upc':
-                row += `<td>${upc}</td><td id="artist-${this.index}">${this.fetching()}</td><td id="album-${this.index}">${this.fetching()}</td>`;
+                row += `<td>${upc}</td>`;
+                row += `<td id="artist-${this.index}">${this.fetching()}</td>`;
+                row += `<td id="album-${this.index}">${this.fetching()}</td>`;
                 break;
             default:
                 row += `<td></td><td></td><td></td>`;
                 this.alertUnknownInputMode();
         }
+        row += `<td id="release-count-${this.index}"><i class="fa-solid fa-cog fa-spin"></i></td>`;
         row += `<td id="result-${this.index}">${this.fetching()}</td></tr>`;
 
         this.outputTable.innerHTML += row;
     }
 
+    /**
+     * String for "fetching..." indicator
+     *
+     * @returns {string}
+     */
     fetching() {
         return '<i class="fa-solid fa-cog fa-spin"></i> Fetching...';
     }
 
-    updateResult(result) {
-        const resultContainer = document.getElementById('result-' + this.index);
-        resultContainer.innerHTML = result;
+    /**
+     * @param {string} result HTML to add to cell
+     * @param {number} index
+     */
+    addToImageCell(result, index) {
+        const artContainer = document.getElementById('result-' + index);
+        if (artContainer.innerHTML.trim() === this.fetching()) {
+            artContainer.innerHTML = result;
+        } else {
+            artContainer.innerHTML += result;
+        }
     }
 
+    /**
+     * @param {string} line
+     */
     addInvalidRow(line) {
         this.outputTable.innerHTML += `<tr class="table-danger"><td colspan="4">Invalid: ${line}</td></tr>`;
     }
 
-    async fetchMbid(line) {
-        if (this.mbidCache.hasOwnProperty(line)) {
-            return this.mbidCache[line];
+    /**
+     * @param line
+     * @returns {Promise<boolean|*[]|*>}
+     */
+    async fetchReleases(line) {
+        if (this.releaseCache.hasOwnProperty(line)) {
+            return this.releaseCache[line];
         }
 
-        let url = 'http://musicbrainz.org/ws/2/release/?query=' + this.getSearchQueryString(line) + '&limit=10&fmt=json';
-        let mbid;
+        let queryString = this.getSearchQueryString(line);
+        let url = `http://musicbrainz.org/ws/2/release/?query=${queryString}&limit=${this.resultLimit}&fmt=json`;
+        let releases = [];
         try {
             await (async () => {
                 await this.sleep(this.mbidThrottle);
@@ -145,21 +193,26 @@ class VgrFetcher {
                 const response = await fetch(url, init);
                 const data = await response.json();
                 console.log(data);
-                mbid = data.releases[0]?.id ?? null;
-                this.mbidCache[line] = mbid;
+                data.releases.forEach((release) => {
+                    releases.push(this.parseReleaseData(release));
+                });
+                this.releaseCache[line] = releases;
                 if (this.inputMode.value === 'upc') {
-                    this.updateArtistAndAlbum(data);
+                    this.updateArtistAlbumReleaseCount(releases);
                 }
             })();
-            return mbid;
+            return releases;
         } catch (error) {
             console.error(error);
             return false;
         }
     }
 
-    updateArtistAndAlbum(data) {
-        const release = data.releases[0] ?? null;
+    /**
+     * @param release
+     * @returns {{mbid: null, artist: (string|string), album: (string|string|*|string)}}
+     */
+    parseReleaseData(release) {
         const artistResults = (release && release.hasOwnProperty('artist-credit')) ? release['artist-credit'] : [];
         const artistsArray = [];
         artistResults.forEach((artistObj) => {
@@ -167,14 +220,50 @@ class VgrFetcher {
         })
         const artist = artistsArray.length ? artistsArray.join(', ') : this.notFound();
         const album = (release && release.hasOwnProperty('title')) ? release.title : this.notFound();
-        document.getElementById('artist-' + this.index).innerHTML = artist;
-        document.getElementById('album-' + this.index).innerHTML = album;
+        return {
+            mbid: release.id ?? null,
+            artist: artist,
+            album: album,
+        };
     }
 
+    /**
+     * @param {Array} releases
+     */
+    updateArtistAlbumReleaseCount(releases) {
+        const artistCell = document.getElementById('artist-' + this.index);
+        const albumCell = document.getElementById('album-' + this.index);
+        const countCell = document.getElementById('release-count-' + this.index);
+        if (releases.length === 0) {
+            artistCell.innerHTML = this.notFound();
+            albumCell.innerHTML = this.notFound();
+            countCell.innerHTML = '0';
+            return;
+        }
+
+        const artists = [];
+        const albums = [];
+        releases.forEach((release) => {
+            artists.push(release.artist);
+            albums.push(release.album);
+        });
+        artistCell.innerHTML = artists.join('<br />');
+        albumCell.innerHTML = albums.join('<br />');
+        countCell.innerHTML = String(releases.length);
+    }
+
+    /**
+     * @param {string} text
+     * @returns {string}
+     */
     notFound(text = 'Not found') {
         return `<span class="alert alert-warning">${text}</span>`;
     }
 
+    /**
+     * @param {number} code
+     * @returns {string}
+     */
     parseAlbumArtResponseCode(code) {
         switch (code) {
             case 307:
@@ -194,37 +283,80 @@ class VgrFetcher {
         return 'Unknown response code: ' + code;
     }
 
-    async fetchAlbumArt(mbid) {
-        if (this.imageCache.hasOwnProperty(mbid)) {
-            return this.imageCache[mbid];
+    /**
+     * @param {Array} releases
+     * @param {number} index
+     * @returns {Promise<void>}
+     */
+    async fetchAndAddImages(releases, index) {
+        if (releases.length === 0) {
+            this.addToImageCell('', index);
+            return;
         }
 
-        let url = `http://coverartarchive.org/release/${mbid}`;
-        let imageUrl;
-        try {
-            await (async () => {
+        let artFound = false;
+        await releases.forEach((release) => {
+            // Populate art cell from cache
+            if (this.imageCache.hasOwnProperty(release.mbid)) {
+                const images = this.imageCache[release.mbid];
+                this.addImages(images, index);
+                return;
+            }
+
+            // Fetch art and populate art cell
+            (async () => {
                 await this.sleep(this.albumArtThrottle);
-                const response = await fetch(url);
-                if (!response.ok) {
-                    const errorMsg = this.parseAlbumArtResponseCode(response.status);
-                    this.updateResult(errorMsg);
-                    return;
+                let data;
+                try {
+                    let url = `http://coverartarchive.org/release/${release.mbid}`;
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        const errorMsg = this.parseAlbumArtResponseCode(response.status);
+                        this.addToImageCell(errorMsg, index);
+                        return;
+                    }
+                    data = await response.json();
+                } catch (error) {
+                    console.error(error);
                 }
-                const data = await response.json();
-                imageUrl = data.images[0].image;
-                this.imageCache[mbid] = imageUrl;
+                console.log(data);
+                const images = data.images.map(image => image.image);
+                this.addImages(images, index);
+                this.imageCache[release.mbid] = images;
+                if (images.length) {
+                    artFound = true;
+                }
             })();
-            return imageUrl;
-        } catch (error) {
-            console.error(error);
-            return false;
+        });
+
+        if (!artFound) {
+            this.addToImageCell(this.notFound('Album art not found'), index);
         }
     }
 
+    /**
+     * Puts provided image files into table cell
+     *
+     * @param {Array.<string>} images
+     * @param {number} index
+     */
+    addImages(images, index) {
+        images.forEach((image) => {
+            this.addToImageCell(`<a href="${image}" target="_blank"><img src="${image}" /></a>`, index);
+        });
+    }
+
+    /**
+     * @param {number} milliseconds
+     * @returns {Promise<unknown>}
+     */
     async sleep(milliseconds) {
         return new Promise(resolve => setTimeout(resolve, milliseconds));
     }
 
+    /**
+     * Handles artist/album vs. UPC mode change
+     */
     handleModeChange() {
         const inputsArtistAlbum = document.getElementById('inputs-artist-album');
         const inputsUpc = document.getElementById('inputs-upc');
@@ -242,10 +374,17 @@ class VgrFetcher {
         }
     }
 
+    /**
+     * Throws alert if a coding error resulted in an unknown input mode
+     */
     alertUnknownInputMode() {
         alert('Unknown input mode: ' + this.inputMode.value);
     }
 
+    /**
+     * @param {string} line
+     * @returns {{artist: string, album: string, upc: string}}
+     */
     getAlbumPropertiesFromLine(line) {
         const splitLine = line.split(this.delimiter);
         const retval = {
@@ -268,6 +407,10 @@ class VgrFetcher {
         return retval;
     }
 
+    /**
+     * @param {string} line
+     * @returns {string}
+     */
     getSearchQueryString(line) {
         const albumProperties = this.getAlbumPropertiesFromLine(line);
         let queryParts = [];
@@ -284,6 +427,10 @@ class VgrFetcher {
         return encodeURIComponent(queryParts.join(' AND '));
     }
 
+    /**
+     * @param {string} line Line from input box
+     * @returns {boolean}
+     */
     isValidLine(line) {
         switch (this.inputMode.value) {
             case 'artist-album':

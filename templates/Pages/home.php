@@ -61,6 +61,7 @@ No Doubt, Tragic Kingdom</textarea>
                     <th>UPC</th>
                     <th>Artist</th>
                     <th>Album</th>
+                    <th>Results</th>
                     <th>Art</th>
                 </tr>
             </thead>
