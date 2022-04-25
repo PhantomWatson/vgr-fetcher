@@ -127,7 +127,11 @@ class VgrFetcher {
         });
         const selectorContainer = document.getElementById('media-' + index);
         selectorContainer.innerHTML = '';
-        selectorContainer.appendChild(select);
+        if (select.childElementCount) {
+            selectorContainer.appendChild(select);
+        } else {
+            this.getArtContainer(index).innerHTML = this.notFound();
+        }
 
         // Select first group
         const firstMedium = select.querySelector('option:checked');
