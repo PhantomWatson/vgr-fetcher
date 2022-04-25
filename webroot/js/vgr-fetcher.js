@@ -165,21 +165,39 @@ class VgrFetcher {
                 console.error(error);
             }
             //console.log('Fetched image data: ', data);
-            data.images.forEach((image) => {
+            for (const image of data.images) {
+                const imgUrl = image.image;
+                const urlIsOkay =  await this.checkImageUrl(imgUrl);
+                if (!urlIsOkay) {
+                    return;
+                }
                 let index = groupedImages.findIndex(group => group.medium === release.medium);
                 const group = (index === -1) ? {medium: release.medium, images: []} : groupedImages[index];
-                // TODO: Check for 200 response for image URL
-                group.images.push(image.image);
+                group.images.push(imgUrl);
                 if (index === -1) {
                     groupedImages.push(group);
                 } else {
                     groupedImages[index] = group;
                 }
-            });
+            }
         }
 
         document.getElementById('input').innerHTML += "\nreturning " + groupedImages.length;
         return groupedImages;
+    }
+
+    /**
+     * @param {string} url
+     * @returns {Promise<boolean>}
+     */
+    async checkImageUrl(url) {
+        try {
+            const response = await fetch(url);
+            return response.ok;
+        } catch (err) {
+            console.log(err);
+        }
+        return false;
     }
 
     /**
