@@ -156,29 +156,20 @@ class VgrFetcher {
         const groupedImages = [];
         for (const release of releases) {
             await this.sleep(this.albumArtThrottle);
-            let data;
+            let imgUrl;
             try {
-                let url = `http://coverartarchive.org/release/${release.mbid}`;
+                let url = `http://coverartarchive.org/release/${release.mbid}/front`;
                 const response = await fetch(url);
                 if (!response.ok) {
                     const errorMsg = this.parseAlbumArtResponseCode(response.status);
                     console.log(`Error response returned when fetching art for release ${release.mbid}: ${errorMsg}`);
                     continue;
                 }
-                data = await response.json();
+                imgUrl = response.url;
             } catch (error) {
                 console.error(error);
             }
-            //console.log('Fetched image data: ', data);
-            for (const image of data.images) {
-                if (!image?.front) {
-                    continue;
-                }
-                const imgUrl = image.image;
-                const urlIsOkay =  await this.checkImageUrl(imgUrl);
-                if (!urlIsOkay) {
-                    return;
-                }
+            if (await this.checkImageUrl(imgUrl)) {
                 let index = groupedImages.findIndex(group => group.medium === release.medium);
                 const group = (index === -1) ? {medium: release.medium, images: []} : groupedImages[index];
                 group.images.push(imgUrl);
