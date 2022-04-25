@@ -177,13 +177,28 @@ class VgrFetcher {
      * @returns {Promise<boolean|*[]|*>}
      */
     async fetchReleases(line) {
-        if (this.releaseCache.hasOwnProperty(line)) {
-            return this.releaseCache[line];
+        const releases = this.releaseCache.hasOwnProperty(line)
+            ? this.releaseCache[line]
+            : await this.fetchReleasesFromApi(line);
+
+        if (this.inputMode.value === 'upc') {
+            this.updateArtistAlbumReleaseCount(releases);
         }
 
+        if (releases.length > 0) {
+            this.releaseCache[line] = releases;
+        }
+
+        return releases;
+    }
+
+    /**
+     * @returns {Promise<*[]|*>}
+     */
+    async fetchReleasesFromApi(line) {
+        let releases = [];
         let queryString = this.getSearchQueryString(line);
         let url = `http://musicbrainz.org/ws/2/release/?query=${queryString}&limit=${this.resultLimit}&fmt=json`;
-        let releases = [];
         try {
             await (async () => {
                 await this.sleep(this.mbidThrottle);
@@ -196,16 +211,11 @@ class VgrFetcher {
                 data.releases.forEach((release) => {
                     releases.push(this.parseReleaseData(release));
                 });
-                this.releaseCache[line] = releases;
-                if (this.inputMode.value === 'upc') {
-                    this.updateArtistAlbumReleaseCount(releases);
-                }
             })();
-            return releases;
         } catch (error) {
             console.error(error);
-            return false;
         }
+        return releases;
     }
 
     /**
