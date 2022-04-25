@@ -376,12 +376,18 @@ class VgrFetcher {
             return;
         }
 
-        const artists = [];
-        const albums = [];
+        let artists = [];
+        let albums = [];
         releases.forEach((release) => {
             artists.push(release.artist);
             albums.push(release.album);
         });
+        const indexOfI = (arr, q) => arr.findIndex(item => q.toLowerCase() === item.toLowerCase());
+        const unique = (value, index, self) => {
+            return indexOfI(self, value) === index;
+        }
+        artists = artists.filter(unique);
+        albums = albums.filter(unique);
         artistCell.innerHTML = artists.join('<br />');
         albumCell.innerHTML = albums.join('<br />');
     }
