@@ -39,6 +39,7 @@ class VgrFetcher {
         // TODO: Skip blank lines
         // TODO: Check status code for each image URL and ignore non-2XX images
         // TODO: Hide UPC column when not in UPC mode
+        // TODO: Use image thumbnails
     }
 
     async process() {
@@ -170,6 +171,9 @@ class VgrFetcher {
             }
             //console.log('Fetched image data: ', data);
             for (const image of data.images) {
+                if (!image?.front) {
+                    continue;
+                }
                 const imgUrl = image.image;
                 const urlIsOkay =  await this.checkImageUrl(imgUrl);
                 if (!urlIsOkay) {
