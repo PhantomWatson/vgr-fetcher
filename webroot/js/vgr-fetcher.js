@@ -295,7 +295,7 @@ class VgrFetcher {
         }
 
         let artFound = false;
-        await releases.forEach((release) => {
+        releases.forEach((release) => {
             // Populate art cell from cache
             if (this.imageCache.hasOwnProperty(release.mbid)) {
                 const images = this.imageCache[release.mbid];
@@ -330,7 +330,8 @@ class VgrFetcher {
         });
 
         if (!artFound) {
-            this.addToImageCell(this.notFound('Album art not found'), index);
+            //TODO: Fix weird async problem where this code is executed before above loop finishes
+            //this.addToImageCell(this.notFound('Album art not found'), index);
         }
     }
 
