@@ -122,10 +122,6 @@ class VgrFetcher {
         });
 
         // Add selector
-        select.addEventListener('change', (event) => {
-            const medium = event.target.value;
-            this.selectMedium(medium, index);
-        });
         const selectorContainer = document.getElementById('media-' + index);
         selectorContainer.innerHTML = '';
         if (select.childElementCount) {
@@ -165,19 +161,21 @@ class VgrFetcher {
                     console.log(`Error response returned when fetching art for release ${release.mbid}: ${errorMsg}`);
                     continue;
                 }
-                imgUrl = response.url;
+                imgUrl = response?.url;
             } catch (error) {
                 console.error(error);
             }
-            if (await this.checkImageUrl(imgUrl)) {
-                let index = groupedImages.findIndex(group => group.medium === release.medium);
-                const group = (index === -1) ? {medium: release.medium, images: []} : groupedImages[index];
-                group.images.push(imgUrl);
-                if (index === -1) {
-                    groupedImages.push(group);
-                } else {
-                    groupedImages[index] = group;
-                }
+            if (!await this.checkImageUrl(imgUrl)) {
+                console.log('Broken link: ' + imgUrl);
+                continue;
+            }
+            let index = groupedImages.findIndex(group => group.medium === release.medium);
+            const group = (index === -1) ? {medium: release.medium, images: []} : groupedImages[index];
+            group.images.push(imgUrl);
+            if (index === -1) {
+                groupedImages.push(group);
+            } else {
+                groupedImages[index] = group;
             }
         }
 
@@ -204,6 +202,26 @@ class VgrFetcher {
     finalize() {
         this.button.disabled = false;
         this.button.innerHTML = 'Process';
+        this.addSelectHandlers();
+    }
+
+    /**
+     * For some reason, it's unreliable to add these onChange handlers right after the <select> elements are created.
+     * Some would have working handlers, some wouldn't. But adding all handlers in finalize() works.
+     */
+    addSelectHandlers() {
+        document.querySelectorAll('#output tbody tr').forEach((row) => {
+            const index = row.rowIndex - 1;
+            const select = row.querySelector('select');
+            if (!select) {
+                return;
+            }
+            select.addEventListener('change', (event) => {
+                console.log('late change handler triggered for index ' + index);
+                const medium = event.target.value;
+                this.selectMedium(medium, index);
+            });
+        });
     }
 
     /**
