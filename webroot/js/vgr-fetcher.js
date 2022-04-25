@@ -95,6 +95,7 @@ class VgrFetcher {
     updateWithGroupedImages(groupedImages, index) {
         const select = document.createElement('select');
         const artContainer = this.getArtContainer(index);
+        artContainer.innerHTML = '';
         let div, img, option;
         groupedImages.forEach((group) => {
             const medium = group.medium;
