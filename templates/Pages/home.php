@@ -36,13 +36,7 @@
                     UPC
                 </label>
             </div>
-            <textarea class="form-control" id="input" rows="3">Blink-182	Buddha
-Blink-182	Enema Of the State
-Blink-182	Enema Of the State
-Blink-182	The Mark, Tom and Travis Show - The Enema Strikes Back
-Blink-182	Take Off Your Pants and Jacket
-Blink-182	Greatest Hits
-Blink-182	Nine</textarea>
+            <textarea class="form-control" id="input" rows="3"></textarea>
             <p class="footnote">
                 One album per line
             </p>
