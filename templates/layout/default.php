@@ -39,6 +39,8 @@
     <footer class="container">
         &copy; <?= date('Y') ?> <a href="https://phantomwatson.com">Phantom Watson</a>
         -
+        <a href="https://github.com/PhantomWatson/vgr-fetcher">GitHub</a>
+        -
         <a href="https://musicbrainz.org/">
             MusicBrainz.org
         </a>
