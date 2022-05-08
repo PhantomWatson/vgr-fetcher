@@ -36,7 +36,8 @@
                 Enter album information into the text field to process it and find its cover art, provided by the
                 <a href="https://musicbrainz.org/">MusicBrains</a> and
                 <a href="https://coverartarchive.org">Cover Art Archive</a>. This was created to help out
-                <a href="https://www.facebook.com/VillageGreenRecords/">Village Green Records</a>.
+                <a href="https://www.facebook.com/VillageGreenRecords/">Village Green Records</a>. Your mileage may
+                vary.
             </p>
 
             <?= $this->Flash->render() ?>
