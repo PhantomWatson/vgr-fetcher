@@ -9,16 +9,17 @@ class VgrFetcher {
         this.form = document.getElementById('form');
         this.form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            await this.process();
+            await this.toggleProcessing();
         });
 
         this.delimiterSelect = document.getElementById('delimiter');
         this.inputField = document.getElementById('input');
 
+        this.isProcessing = false;
         this.button = document.getElementById('submit');
         this.button.addEventListener('click', async (event) => {
             event.preventDefault();
-            await this.process();
+            await this.toggleProcessing();
         });
 
         this.output = document.getElementById('output');
@@ -34,21 +35,30 @@ class VgrFetcher {
         });
         this.handleModeChange();
 
-        // TODO: Change process button to a stop button
         // TODO: Check status code for each image URL and ignore non-2XX images
         // TODO: Hide UPC column when not in UPC mode
         // TODO: Use image thumbnails
     }
 
-    async process() {
+    async toggleProcessing() {
+        this.isProcessing = !this.isProcessing;
+
+        if (!this.isProcessing) {
+            this.button.innerHTML = 'Process';
+            this.button.classList.add('btn-primary');
+            this.button.classList.remove('btn-danger');
+            return;
+        }
+
         const input = this.inputField.value;
         if (!input) {
             alert('You gotta put some input in first');
             return;
         }
 
-        this.button.disabled = true;
-        this.button.innerHTML = 'Processing...';
+        this.button.innerHTML = 'Stop';
+        this.button.classList.remove('btn-primary');
+        this.button.classList.add('btn-danger');
         this.output.dataset.hasOutput = "1";
         this.delimiter = this.delimiterSelect.value;
         this.lines = input.split("\n");
@@ -62,6 +72,10 @@ class VgrFetcher {
      * @returns {Promise<void>}
      */
     async processLine(index) {
+        if (!this.isProcessing) {
+            return;
+        }
+
         const line = this.lines[index].trim();
 
         if (line === '') {
@@ -206,7 +220,6 @@ class VgrFetcher {
      * Wraps up execution
      */
     finalize() {
-        this.button.disabled = false;
         this.button.innerHTML = 'Process';
         this.addSelectHandlers();
     }
