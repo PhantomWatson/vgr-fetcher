@@ -191,17 +191,13 @@ class VgrFetcher {
                     continue;
                 }
                 const data = await response.json();
-                console.log(data);
                 (data?.images ?? []).forEach((img) => {
-                    console.log(img);
                     if (img.types.indexOf('Front') === -1) {
-                        console.log('Not front');
                         return;
                     }
                     const full = img?.image;
                     const thumb = img?.thumbnails?.small ?? full;
-                    console.log(full);
-                    console.log(thumb);
+
                     /*if (!await this.checkImageUrl(full)) {
                         console.log('Broken link: ' + full);
                         return;
@@ -272,7 +268,6 @@ class VgrFetcher {
                 return;
             }
             select.addEventListener('change', (event) => {
-                console.log('late change handler triggered for index ' + index);
                 const medium = event.target.value;
                 this.selectMedium(medium, index);
             });
@@ -397,7 +392,6 @@ class VgrFetcher {
                 };
                 const response = await fetch(url, init);
                 const data = await response.json();
-                //console.log('Fetched release data: ', data);
                 data.releases.forEach((release) => {
                     releases.push(this.parseReleaseData(release));
                 });
@@ -424,7 +418,6 @@ class VgrFetcher {
         let medium = media ? media[0]?.format : null;
         if (!medium) {
             medium = 'Unknown Format';
-            //console.log('Unknown format for this release: ', release);
         }
         return {
             mbid: release.id ?? null,
