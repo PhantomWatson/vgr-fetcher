@@ -34,7 +34,6 @@ class VgrFetcher {
         });
         this.handleModeChange();
 
-        // TODO: Clear table if this isn't the first time input has been processed
         // TODO: Change process button to a stop button
         // TODO: Skip blank lines
         // TODO: Check status code for each image URL and ignore non-2XX images
