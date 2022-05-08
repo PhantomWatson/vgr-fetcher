@@ -37,7 +37,8 @@ class VgrFetcher {
 
         // TODO: Check status code for each image URL and ignore non-2XX images
         // TODO: Hide UPC column when not in UPC mode
-        // TODO: Use image thumbnails
+        // TODO: Show all front images for each release
+        // TODO: Use image thumbnails, linked to full sized images
     }
 
     async toggleProcessing() {
@@ -325,6 +326,8 @@ class VgrFetcher {
     }
 
     /**
+     * Fetch releases from cache or API
+     *
      * @param line
      * @returns {Promise<boolean|*[]|*>}
      */
