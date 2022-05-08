@@ -41,4 +41,9 @@ label {
   padding: 5px;
 }
 
+.navbar-brand {
+  font-size: 2em;
+  margin: auto;
+}
+
 /*# sourceMappingURL=styles.css.map */

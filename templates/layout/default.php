@@ -32,6 +32,13 @@
     </nav>
     <main class="main">
         <div class="container">
+            <p class="alert alert-primary">
+                Enter album information into the text field to process it and find its cover art, provided by the
+                <a href="https://musicbrainz.org/">MusicBrains</a> and
+                <a href="https://coverartarchive.org">Cover Art Archive</a>. This was created to help out
+                <a href="https://www.facebook.com/VillageGreenRecords/">Village Green Records</a>.
+            </p>
+
             <?= $this->Flash->render() ?>
             <?= $this->fetch('content') ?>
         </div>
@@ -40,14 +47,6 @@
         &copy; <?= date('Y') ?> <a href="https://phantomwatson.com">Phantom Watson</a>
         -
         <a href="https://github.com/PhantomWatson/vgr-fetcher">GitHub</a>
-        -
-        <a href="https://musicbrainz.org/">
-            MusicBrainz.org
-        </a>
-        -
-        <a href="https://coverartarchive.org">
-            CoverArtArchive.org
-        </a>
     </footer>
 </body>
 </html>

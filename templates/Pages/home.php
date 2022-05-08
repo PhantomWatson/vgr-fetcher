@@ -18,14 +18,14 @@
                 <label for="input" class="form-label">
                     Artist Name
                     <select id="delimiter">
-                        <option value="	">
-                            (tab)
-                        </option>
                         <option value=",">
                             ,
                         </option>
                         <option value=" - ">
                             -
+                        </option>
+                        <option value="	">
+                            (tab)
                         </option>
                     </select>
                     Album Name
@@ -38,7 +38,7 @@
             </div>
             <textarea class="form-control" id="input" rows="3"></textarea>
             <p class="footnote">
-                One album per line
+                One album per line, e.g. <strong>The Beatles, Yellow Submarine</strong>
             </p>
         </div>
         <div class="mb-3">
