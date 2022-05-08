@@ -35,7 +35,6 @@ class VgrFetcher {
         this.handleModeChange();
 
         // TODO: Change process button to a stop button
-        // TODO: Skip blank lines
         // TODO: Check status code for each image URL and ignore non-2XX images
         // TODO: Hide UPC column when not in UPC mode
         // TODO: Use image thumbnails
@@ -65,8 +64,16 @@ class VgrFetcher {
     async processLine(index) {
         const line = this.lines[index].trim();
 
+        if (line === '') {
+            this.index++;
+            await this.processLine(this.index);
+            return;
+        }
+
         if (!this.isValidLine(line)) {
             this.addInvalidRow(line);
+            this.index++;
+            await this.processLine(this.index);
             return;
         }
 
