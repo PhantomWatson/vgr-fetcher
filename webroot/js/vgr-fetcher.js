@@ -37,17 +37,14 @@ class VgrFetcher {
 
         // TODO: Check status code for each image URL and ignore non-2XX images
         // TODO: Hide UPC column when not in UPC mode
-        // TODO: Show all front images for each release
-        // TODO: Use image thumbnails, linked to full sized images
+        // TODO: If using UPC and no art is found, provide a button to search for art by artist/album name
     }
 
     async toggleProcessing() {
         this.isProcessing = !this.isProcessing;
 
         if (!this.isProcessing) {
-            this.button.innerHTML = 'Process';
-            this.button.classList.add('btn-primary');
-            this.button.classList.remove('btn-danger');
+            this.modeStop();
             return;
         }
 
@@ -57,9 +54,7 @@ class VgrFetcher {
             return;
         }
 
-        this.button.innerHTML = 'Stop';
-        this.button.classList.remove('btn-primary');
-        this.button.classList.add('btn-danger');
+        this.modeStart()
         this.output.dataset.hasOutput = "1";
         this.delimiter = this.delimiterSelect.value;
         this.lines = input.split("\n");
@@ -67,6 +62,18 @@ class VgrFetcher {
         this.outputTable.innerHTML = '';
         this.index = 0;
         await this.processLine(this.index);
+    }
+
+    modeStop() {
+        this.button.innerHTML = 'Process';
+        this.button.classList.add('btn-primary');
+        this.button.classList.remove('btn-danger');
+    }
+
+    modeStart() {
+        this.button.innerHTML = 'Stop';
+        this.button.classList.remove('btn-primary');
+        this.button.classList.add('btn-danger');
     }
 
     /**
@@ -77,7 +84,10 @@ class VgrFetcher {
             return;
         }
 
-        const line = this.lines[index].trim();
+        let line = this.lines[index];
+        if (line) {
+            line = line.trim();
+        }
 
         if (line === '') {
             this.index++;
@@ -95,10 +105,9 @@ class VgrFetcher {
         const albumProperties = this.getAlbumPropertiesFromLine(line);
         this.addRow(albumProperties.upc, albumProperties.artist, albumProperties.album);
         const releases = await this.fetchReleases(line);
-        //const groupedImages = await this.getGroupedImages(releases);
-        //this.updateWithGroupedImages(groupedImages, index);
-        this.getGroupedImages(releases)
-            .then((groupedImages) => this.updateWithGroupedImages(groupedImages, index));
+        const images = await this.fetchImages(releases);
+        const groupedImages = this.groupImages(images);
+        this.updateWithGroupedImages(groupedImages, index);
         this.setProgress(index + 1);
 
         if (this.isDone()) {
@@ -134,9 +143,9 @@ class VgrFetcher {
             div.dataset.medium = medium;
             images.forEach((image) => {
                 img = document.createElement('a');
-                img.href = image;
+                img.href = image.full;
                 img.target = '_blank';
-                img.innerHTML = `<img src="${image}" />`;
+                img.innerHTML = `<img src="${image.thumb}" title="Click to open full-size image" />`;
                 div.appendChild(img)
             });
             artContainer.appendChild(div);
@@ -169,36 +178,61 @@ class VgrFetcher {
         });
     }
 
-    async getGroupedImages(releases) {
-        const groupedImages = [];
+    async fetchImages(releases) {
+        const images = [];
         for (const release of releases) {
             await this.sleep(this.albumArtThrottle);
-            let imgUrl;
             try {
-                let url = `http://coverartarchive.org/release/${release.mbid}/front`;
+                let url = `http://coverartarchive.org/release/${release.mbid}/`;
                 const response = await fetch(url);
                 if (!response.ok) {
                     const errorMsg = this.parseAlbumArtResponseCode(response.status);
                     console.log(`Error response returned when fetching art for release ${release.mbid}: ${errorMsg}`);
                     continue;
                 }
-                imgUrl = response?.url;
+                const data = await response.json();
+                console.log(data);
+                (data?.images ?? []).forEach((img) => {
+                    console.log(img);
+                    if (img.types.indexOf('Front') === -1) {
+                        console.log('Not front');
+                        return;
+                    }
+                    const full = img?.image;
+                    const thumb = img?.thumbnails?.small ?? full;
+                    console.log(full);
+                    console.log(thumb);
+                    /*if (!await this.checkImageUrl(full)) {
+                        console.log('Broken link: ' + full);
+                        return;
+                    }*/
+
+                    images.push({
+                        full: full,
+                        thumb: thumb,
+                        medium: release.medium,
+                    });
+                });
             } catch (error) {
                 console.error(error);
             }
-            if (!await this.checkImageUrl(imgUrl)) {
-                console.log('Broken link: ' + imgUrl);
-                continue;
-            }
-            let index = groupedImages.findIndex(group => group.medium === release.medium);
-            const group = (index === -1) ? {medium: release.medium, images: []} : groupedImages[index];
-            group.images.push(imgUrl);
+        }
+
+        return images;
+    }
+
+    groupImages(images) {
+        const groupedImages = [];
+        images.forEach((image) => {
+            let index = groupedImages.findIndex(group => group.medium === image.medium);
+            const group = (index === -1) ? {medium: image.medium, images: []} : groupedImages[index];
+            group.images.push(image);
             if (index === -1) {
                 groupedImages.push(group);
             } else {
                 groupedImages[index] = group;
             }
-        }
+        });
 
         return groupedImages;
     }
@@ -221,7 +255,8 @@ class VgrFetcher {
      * Wraps up execution
      */
     finalize() {
-        this.button.innerHTML = 'Process';
+        this.isProcessing = false;
+        this.modeStop();
         this.addSelectHandlers();
     }
 
